@@ -92,7 +92,7 @@ def get_args_parser(add_help=True):
     parser.add_argument("--opt", default="sgd", type=str, help="optimizer")
     parser.add_argument(
         "--lr",
-        default=0.02,
+        default=0.005,
         type=float,
         help="initial learning rate, 0.02 is the default value for training on 8 gpus and 2 images_per_gpu",
     )
