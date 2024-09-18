@@ -129,7 +129,7 @@ def get_args_parser(add_help=True):
         "--lr-gamma", default=0.1, type=float, help="decrease lr by a factor of lr-gamma (multisteplr scheduler only)"
     )
     parser.add_argument("--print-freq", default=20, type=int, help="print frequency")
-    parser.add_argument("--output-dir", default=".", type=str, help="path to save outputs")
+    parser.add_argument("--output-dir", default="/home/ai1/DATA/PyTorch_Vision/references/detection/weights/", type=str, help="path to save outputs")
     parser.add_argument("--resume", default="", type=str, help="path of checkpoint")
     parser.add_argument("--start_epoch", default=0, type=int, help="start epoch")
     parser.add_argument("--aspect-ratio-group-factor", default=3, type=int)
