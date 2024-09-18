@@ -308,6 +308,8 @@ def main(args):
             train_sampler.set_epoch(epoch)
         train_one_epoch(model, optimizer, data_loader, device, epoch, args.print_freq, scaler)
         lr_scheduler.step()
+        timeStamp = time.time() - start_time
+        print(f"The time for epoch{epoch} is {timeStamp}")
         if args.output_dir:
             checkpoint = {
                 "model": model_without_ddp.state_dict(),
