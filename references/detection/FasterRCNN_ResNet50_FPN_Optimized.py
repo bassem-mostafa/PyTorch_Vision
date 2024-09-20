@@ -17,6 +17,20 @@ class DepthWiseSeparable2D(nn.Module):
         out = self.PointWise(out)
 
         return out
+    
+
+#Here we will replace Relu module with Gelu in "FasterRCNN_Optimized" model..............
+def Apply_GELU_(model):
+
+    for child_name, child in model.named_children():
+        if isinstance(child, nn.ReLU):
+            #replace the relu layer with gelu
+            setattr(model, child_name, nn.GELU())
+        else:
+            Apply_GELU_(child)
+
+
+
 
 class FasterRCNN_Optimized(FasterRCNN):
     def __init__(self):
@@ -56,8 +70,8 @@ class FasterRCNN_Optimized(FasterRCNN):
                         # box_positive_fraction,
                         # bbox_reg_weights,
                         )
-        
-        self.load_state_dict(load("/home/ai1/.cache/torch/hub/checkpoints/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
+        self.load_state_dict(load("fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
+        #self.load_state_dict(load("/home/ai1/.cache/torch/hub/checkpoints/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
         # TODO modify/fine-tune the backbone
         #For Layer_1
         backbone.body.layer1[0].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
@@ -82,12 +96,6 @@ class FasterRCNN_Optimized(FasterRCNN):
         backbone.body.layer4[0].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(2, 2))
         backbone.body.layer4[1].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(1, 1))
         backbone.body.layer4[2].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(1, 1))  
-
-
-
-
-
-
 
         # The following snippets modifies the backbone architecture by different ways.
         
@@ -116,6 +124,23 @@ class FasterRCNN_Optimized(FasterRCNN):
         # backbone.body.conv3 = Conv2d(128, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
 
 model = FasterRCNN_Optimized()
+
+
+#here we will replace Relu activation function with Gelu....
+
+Apply_GELU_(model)
+
+
+"""
+for name,child in model.backbone.body.named_modules(): 
+    #print(child)
+    if  hasattr(child,'relu'):
+        print("I'm here")
+        child._modules['relu'] = nn.GELU()
+        #child.relu = nn.GELU()
+        print("I'm not here")
+
+"""
 
 # from torch import load
 # model.load_state_dict(load("fasterrcnn_resnet50_fpn_coco.pth", weights_only=True))
