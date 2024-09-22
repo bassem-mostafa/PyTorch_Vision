@@ -2,7 +2,6 @@ from torchinfo import summary # https://www.geeksforgeeks.org/how-to-print-the-m
 from torch import nn, load
 from torchvision.models.detection import FasterRCNN
 
-from torchvision.models.resnet import ResNet50_Weights
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 
 
