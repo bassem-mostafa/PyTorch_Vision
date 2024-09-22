@@ -76,7 +76,7 @@ class FasterRCNN_Optimized(FasterRCNN):
         #self.load_state_dict(load("/home/ai1/.cache/torch/hub/checkpoints/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
         
         # TODO modify/fine-tune the backbone
-        if False:
+        if True:
             # Updating backbone using depth-wise separable convolution instead of standard convolution
             #For Layer_1
             backbone.body.layer1[0].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
