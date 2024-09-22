@@ -36,7 +36,8 @@ class FasterRCNN_Optimized(FasterRCNN):
     def __init__(self):
         backbone = resnet_fpn_backbone(
                                       backbone_name = "resnet50",
-                                      weights = ResNet50_Weights.DEFAULT,
+                                      weights = None, # `None` for NO pre-trained weights loading
+                                                      # `ResNet50_Weights.DEFAULT` for specific pre-trained weights loading
                                       )
         
         super().__init__(
