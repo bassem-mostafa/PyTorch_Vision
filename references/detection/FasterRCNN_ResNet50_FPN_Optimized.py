@@ -133,21 +133,6 @@ class FasterRCNN_Optimized(FasterRCNN):
         # backbone.body.conv3 = Conv2d(128, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
 
 model = FasterRCNN_Optimized()
-
-"""
-for name,child in model.backbone.body.named_modules(): 
-    #print(child)
-    if  hasattr(child,'relu'):
-        print("I'm here")
-        child._modules['relu'] = nn.GELU()
-        #child.relu = nn.GELU()
-        print("I'm not here")
-
-"""
-
-# from torch import load
-# model.load_state_dict(load("fasterrcnn_resnet50_fpn_coco.pth", weights_only=True))
-
 model.eval()
 
 print(f"*"*80)
