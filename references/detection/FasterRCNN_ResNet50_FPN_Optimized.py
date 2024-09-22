@@ -4,7 +4,10 @@ from torchvision.models.detection import FasterRCNN
 
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 
-
+def _rename_module(module, old_name, new_name):
+    from collections import OrderedDict
+    module.__dict__['_modules'] = OrderedDict([(new_name, v) if k == old_name else (k, v) for k, v in module.__dict__['_modules'].items()])
+    
 class DepthWiseSeparable2D(nn.Module):
     def __init__(self, inputChannel, outputChannel,stride, kernel_size = 3, padding = 1, bias = False):
         super(DepthWiseSeparable2D, self).__init__()
@@ -78,7 +81,7 @@ class FasterRCNN_Optimized(FasterRCNN):
         if True:
             # Updating backbone using depth-wise separable convolution instead of standard convolution
             #For Layer_1
-            backbone.body.layer1[0].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
+            backbone.body.layer1[0].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1)) #; _rename_module(backbone.body.layer1[0], "conv2", "DWS2")
             backbone.body.layer1[1].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
             backbone.body.layer1[2].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
     
