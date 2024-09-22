@@ -101,6 +101,10 @@ class FasterRCNN_Optimized(FasterRCNN):
             backbone.body.layer4[0].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(2, 2))
             backbone.body.layer4[1].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(1, 1))
             backbone.body.layer4[2].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(1, 1))
+        
+        if True:
+            # Updating backbone using GELU activation instead of Relu
+            Apply_GELU_(self)
 
         # The following snippets modifies the backbone architecture by different ways.
         
@@ -129,12 +133,6 @@ class FasterRCNN_Optimized(FasterRCNN):
         # backbone.body.conv3 = Conv2d(128, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
 
 model = FasterRCNN_Optimized()
-
-
-#here we will replace Relu activation function with Gelu....
-
-Apply_GELU_(model)
-
 
 """
 for name,child in model.backbone.body.named_modules(): 
