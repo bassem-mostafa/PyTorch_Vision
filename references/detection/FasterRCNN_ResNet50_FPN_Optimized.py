@@ -71,8 +71,10 @@ class FasterRCNN_Optimized(FasterRCNN):
                         # box_positive_fraction,
                         # bbox_reg_weights,
                         )
+        # Here we're loading the pre-trained weights for the whole model `FasterRCNN + ResNet50 + FPN`
         self.load_state_dict(load("fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
         #self.load_state_dict(load("/home/ai1/.cache/torch/hub/checkpoints/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
+        
         # TODO modify/fine-tune the backbone
         #For Layer_1
         backbone.body.layer1[0].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
