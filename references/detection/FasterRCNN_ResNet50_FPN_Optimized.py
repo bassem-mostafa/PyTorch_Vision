@@ -76,29 +76,31 @@ class FasterRCNN_Optimized(FasterRCNN):
         #self.load_state_dict(load("/home/ai1/.cache/torch/hub/checkpoints/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
         
         # TODO modify/fine-tune the backbone
-        #For Layer_1
-        backbone.body.layer1[0].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
-        backbone.body.layer1[1].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
-        backbone.body.layer1[2].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
-
-        #For Layer_2 
-        backbone.body.layer2[0].conv2=DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(2, 2))
-        backbone.body.layer2[1].conv2=DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(1, 1))
-        backbone.body.layer2[2].conv2=DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(1, 1))
-        backbone.body.layer2[3].conv2=DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(1, 1))
-
-        #For Layer_3
-        backbone.body.layer3[0].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(2, 2))
-        backbone.body.layer3[1].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
-        backbone.body.layer3[2].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
-        backbone.body.layer3[3].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
-        backbone.body.layer3[4].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
-        backbone.body.layer3[5].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
-
-        #For Layer_4
-        backbone.body.layer4[0].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(2, 2))
-        backbone.body.layer4[1].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(1, 1))
-        backbone.body.layer4[2].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(1, 1))  
+        if False:
+            # Updating backbone using depth-wise separable convolution instead of standard convolution
+            #For Layer_1
+            backbone.body.layer1[0].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
+            backbone.body.layer1[1].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
+            backbone.body.layer1[2].conv2=DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
+    
+            #For Layer_2 
+            backbone.body.layer2[0].conv2=DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(2, 2))
+            backbone.body.layer2[1].conv2=DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(1, 1))
+            backbone.body.layer2[2].conv2=DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(1, 1))
+            backbone.body.layer2[3].conv2=DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(1, 1))
+    
+            #For Layer_3
+            backbone.body.layer3[0].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(2, 2))
+            backbone.body.layer3[1].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
+            backbone.body.layer3[2].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
+            backbone.body.layer3[3].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
+            backbone.body.layer3[4].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
+            backbone.body.layer3[5].conv2=DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
+    
+            #For Layer_4
+            backbone.body.layer4[0].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(2, 2))
+            backbone.body.layer4[1].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(1, 1))
+            backbone.body.layer4[2].conv2=DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(1, 1))
 
         # The following snippets modifies the backbone architecture by different ways.
         
