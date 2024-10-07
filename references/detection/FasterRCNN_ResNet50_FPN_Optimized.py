@@ -43,8 +43,10 @@ class Bottleneck_Optimized(Bottleneck):
     """
     def __init__(self, inplanes: int, planes: int, stride: int = 1, downsample = None, groups = 1, base_width = 64, dilation = 1, norm_layer = None):
         super().__init__(inplanes, planes, stride, downsample, groups, base_width, dilation, norm_layer)
+        # TODO Modify for optimization
         
     def forward(self, x: Tensor) -> Tensor:
+        # TODO Modify for optimization
         identity = x
 
         out = self.conv1(x)
@@ -67,6 +69,9 @@ class Bottleneck_Optimized(Bottleneck):
         return out
 
 class ResNet50_Optimized(ResNet):
+    """
+    Wrapper for `Torch Vision` `ResNet`
+    """
     def __init__(self):
         super().__init__(
                         block = Bottleneck_Optimized,
@@ -78,11 +83,10 @@ class ResNet50_Optimized(ResNet):
                         # replace_stride_with_dilation,
                         norm_layer = FrozenBatchNorm2d,
                         )
+        # TODO Modify for optimization
+        
     def forward(self, x: Tensor) -> Tensor:
-        """
-        *Overrides* `Torch-Vision` `ResNet` `forward` implementation
-        """
-        ...
+        # TODO Modify for optimization
         # See note [TorchScript super()]
         x = self.conv1(x)
         x = self.bn1(x)
