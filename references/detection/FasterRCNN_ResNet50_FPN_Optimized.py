@@ -6,9 +6,7 @@ from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
 
 import torch
 
-import warnings
 from collections import OrderedDict
-from typing import List, Tuple
 
 from torchvision.models.resnet import ResNet, Bottleneck
 
