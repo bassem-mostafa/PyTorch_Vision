@@ -41,6 +41,9 @@ class Bottleneck_Optimized(Bottleneck):
     """
     Wrapper for `Torch Vision` `ResNet` `Bottleneck`
     """
+    def __init__(self, inplanes: int, planes: int, stride: int = 1, downsample = None, groups = 1, base_width = 64, dilation = 1, norm_layer = None):
+        super().__init__(inplanes, planes, stride, downsample, groups, base_width, dilation, norm_layer)
+        
     def forward(self, x: Tensor) -> Tensor:
         identity = x
 
