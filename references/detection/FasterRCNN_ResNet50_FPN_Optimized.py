@@ -1,11 +1,18 @@
 from torchinfo import summary # https://www.geeksforgeeks.org/how-to-print-the-model-summary-in-pytorch/
-from torch import nn, load
+from torch import nn, load, Tensor
 from torchvision.models.detection import FasterRCNN
 
-from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
+from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
+
+import torch
+
+import warnings
+from collections import OrderedDict
+from typing import List, Tuple
+
+from torchvision.models.resnet import ResNet, Bottleneck
 
 def _rename_module(module, old_name, new_name):
-    from collections import OrderedDict
     module.__dict__['_modules'] = OrderedDict([(new_name, v) if k == old_name else (k, v) for k, v in module.__dict__['_modules'].items()])
     
 class _DepthWiseSeparable2D(nn.Module):
@@ -31,16 +38,73 @@ def _Apply_GELU_(model):
         else:
             _Apply_GELU_(child)
 
+class Bottleneck_Optimized(Bottleneck):
+    """
+    Wrapper for `Torch Vision` `ResNet` `Bottleneck`
+    """
+    def forward(self, x: Tensor) -> Tensor:
+        identity = x
 
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
 
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        if self.downsample is not None:
+            identity = self.downsample(x)
+
+        out += identity
+        out = self.relu(out)
+
+        return out
+
+class ResNet50_Optimized(ResNet):
+    def __init__(self):
+        super().__init__(
+                        block = Bottleneck_Optimized,
+                        layers = [3, 4, 6, 3],
+                        # num_classes,
+                        # zero_init_residual,
+                        # groups,
+                        # width_per_group,
+                        # replace_stride_with_dilation,
+                        # norm_layer,
+                        )
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        *Overrides* `Torch-Vision` `ResNet` `forward` implementation
+        """
+        ...
+        # See note [TorchScript super()]
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+
+        return x
 
 class FasterRCNN_Optimized(FasterRCNN):
     def __init__(self):
-        backbone = resnet_fpn_backbone(
-                                      backbone_name = "resnet50",
-                                      weights = None, # `None` for NO pre-trained weights loading
-                                                      # `ResNet50_Weights.DEFAULT` for specific pre-trained weights loading
-                                      )
+        backbone = _resnet_fpn_extractor(
+                                        backbone = ResNet50_Optimized(),
+                                        trainable_layers = 3, # trainable_layers (int): number of trainable (not frozen) layers starting from final block.
+                                                              #                         Valid values are between 0 and 5, with 5 meaning all backbone layers are trainable.
+                                        )
         
         super().__init__(
                         backbone = backbone,
