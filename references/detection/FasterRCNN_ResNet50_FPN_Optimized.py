@@ -3,6 +3,7 @@ from torch import nn, load, Tensor
 from torchvision.models.detection import FasterRCNN
 
 from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
+from torchvision.ops.misc import FrozenBatchNorm2d
 
 import torch
 
@@ -72,7 +73,7 @@ class ResNet50_Optimized(ResNet):
                         # groups,
                         # width_per_group,
                         # replace_stride_with_dilation,
-                        # norm_layer,
+                        norm_layer = FrozenBatchNorm2d,
                         )
     def forward(self, x: Tensor) -> Tensor:
         """
