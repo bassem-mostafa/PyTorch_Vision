@@ -84,7 +84,7 @@ class Bottleneck_Optimized(Bottleneck):
             self.se    = _SEBlock(planes * self.expansion )
         if False:
             self.se = _SEBlock_Pointwise(planes * self.expansion)
-        if False:
+        if True:
             self.conv2 = _DepthWiseSeparable2D(width, width, stride)   #overwrite conv2D to DepthWS
         if True:
             self.relu  = nn.GELU()    #overwrite relu to gelu
