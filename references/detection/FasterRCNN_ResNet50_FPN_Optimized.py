@@ -27,39 +27,28 @@ class _DepthWiseSeparable2D(nn.Module):
         return out
 
 class _SEBlock(nn.Module):
-    def __init__(self, c, r=16):   #c is the size of the feature map
-          super().__init__()
-          self.globpool = nn.AdaptiveAvgPool2d((1,1))
-          self.fc1     =  nn.Linear(c, c // r)  #in->>c , out-->c/r
-          self.fc2     =  nn.Linear(c // r, c)  #in->>c/r , out-->c
-          self.relu    =  nn.ReLU()
-          self.sigmoid =  nn.Sigmoid()
-    
-    def forward(self, x):
+    def __init__(self, in_channels, r=16):
+        super().__init__()
+        C = in_channels
+        self.globpool = nn.AdaptiveAvgPool2d((1,1))
+        self.fc1 = nn.Linear(C, C//r, bias=False)
+        self.fc2 = nn.Linear(C//r, C, bias=False)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
 
+    def forward(self, x):
+        # x shape: [N, C, H, W]
         f = self.globpool(x)
-        f = torch.flatten(f, 1) # start dim(the first dim to flatten) = 1
+        f = torch.flatten(f,1)
         f = self.relu(self.fc1(f))
         f = self.sigmoid(self.fc2(f))
+        f = f[:,:,None,None]
+        # f shape: [N, C, 1, 1]
 
-        f = f[:,:,None,None]  #
-
-        return x * f
-
-
-          
-        
+        scale = x * f
+        return scale
 
 
-#Here we will replace Relu module with Gelu in "FasterRCNN_Optimized" model..............
-def _Apply_GELU_(model):
-
-    for child_name, child in model.named_children():
-        if isinstance(child, nn.ReLU):
-            #replace the relu layer with gelu
-            setattr(model, child_name, nn.GELU())
-        else:
-            _Apply_GELU_(child)
 
 class Bottleneck_Optimized(Bottleneck):
     """
@@ -67,16 +56,15 @@ class Bottleneck_Optimized(Bottleneck):
     """
     def __init__(self, inplanes: int, planes: int, stride: int = 1, downsample = None, groups = 1, base_width = 64, dilation = 1, norm_layer = None):
         super().__init__(inplanes, planes, stride, downsample, groups, base_width, dilation, norm_layer)
-
         # TODO Modify for optimization
-        self.conv2 = _DepthWiseSeparable2D(base_width, base_width, stride)   #overwrite conv2D to DepthWS
-        self.relu  = nn.GELU()    #overwrite relu to gelu
-        self.se    = _SEBlock(planes)
-
-
-
-
-
+        self.expansion = 4
+        width = int(planes * (base_width / 64.0)) * groups
+        if False:
+            self.se    = _SEBlock(planes * self.expansion )
+        if True:
+            self.conv2 = _DepthWiseSeparable2D(width, width, stride)   #overwrite conv2D to DepthWS
+        if True:
+            self.relu  = nn.GELU()    #overwrite relu to gelu
 
     def forward(self, x: Tensor) -> Tensor:
         # TODO Modify for optimization
@@ -93,7 +81,8 @@ class Bottleneck_Optimized(Bottleneck):
         out = self.conv3(out)
         out = self.bn3(out)
 
-        out = self.se(out)    #Apply Squeeze and Excitation
+        if False:
+            out = self.se(out)    #Apply Squeeze and Excitation
 
         if self.downsample is not None:
             identity = self.downsample(x)
@@ -183,38 +172,7 @@ class FasterRCNN_Optimized(FasterRCNN):
         # Here we're loading the pre-trained weights for the whole model `FasterRCNN + ResNet50 + FPN`
         #self.load_state_dict(load("fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
         #self.load_state_dict(load("/home/ai1/.cache/torch/hub/checkpoints/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
-        """
-        # TODO modify/fine-tune the backbone
-        if True:
-            # Updating backbone using depth-wise separable convolution instead of standard convolution
-            #For Layer_1
-            backbone.body.layer1[0].conv2=_DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1)) #; _rename_module(backbone.body.layer1[0], "conv2", "DWS2")
-            backbone.body.layer1[1].conv2=_DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
-            backbone.body.layer1[2].conv2=_DepthWiseSeparable2D(64, 64, kernel_size=(3, 3), stride=(1, 1))
-    
-            #For Layer_2 
-            backbone.body.layer2[0].conv2=_DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(2, 2))
-            backbone.body.layer2[1].conv2=_DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(1, 1))
-            backbone.body.layer2[2].conv2=_DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(1, 1))
-            backbone.body.layer2[3].conv2=_DepthWiseSeparable2D(128, 128, kernel_size=(3, 3), stride=(1, 1))
-    
-            #For Layer_3
-            backbone.body.layer3[0].conv2=_DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(2, 2))
-            backbone.body.layer3[1].conv2=_DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
-            backbone.body.layer3[2].conv2=_DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
-            backbone.body.layer3[3].conv2=_DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
-            backbone.body.layer3[4].conv2=_DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
-            backbone.body.layer3[5].conv2=_DepthWiseSeparable2D(256, 256, kernel_size=(3, 3), stride=(1, 1))
-    
-            #For Layer_4
-            backbone.body.layer4[0].conv2=_DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(2, 2))
-            backbone.body.layer4[1].conv2=_DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(1, 1))
-            backbone.body.layer4[2].conv2=_DepthWiseSeparable2D(512, 512, kernel_size=(3, 3), stride=(1, 1))
-        
-        if True:
-            # Updating backbone using GELU activation instead of Relu
-            _Apply_GELU_(self)
-        """
+       
         # The following snippets modifies the backbone architecture by different ways.
         
         # The following deletes an existing block
