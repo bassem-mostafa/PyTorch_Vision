@@ -83,10 +83,12 @@ class Bottleneck_Optimized(Bottleneck):
         if False:
             self.se    = _SEBlock(planes * self.expansion )
         if False:
-            self.conv2 = _DepthWiseSeparable2D(width, width, stride)   #overwrite conv2D to DepthWS
+            self.se = _SEBlock_Pointwise(planes * self.expansion)
         if False:
-            self.relu  = nn.GELU()    #overwrite relu to gelu
+            self.conv2 = _DepthWiseSeparable2D(width, width, stride)   #overwrite conv2D to DepthWS
         if True:
+            self.relu  = nn.GELU()    #overwrite relu to gelu
+        if False:
             # Cardinality Pattern
             if norm_layer is None:
                 norm_layer = nn.BatchNorm2d
@@ -106,8 +108,7 @@ class Bottleneck_Optimized(Bottleneck):
             self.bn2 = norm_layer(2*width)
             self.conv3 = nn.Conv2d(2*width, planes * self.expansion, kernel_size=1, stride=1, bias=False)
 
-        if False:
-            self.se_conv = _SEBlock_Pointwise(planes * self.expansion)
+
 
     def forward(self, x: Tensor) -> Tensor:
         # TODO Modify for optimization
