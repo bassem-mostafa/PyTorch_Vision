@@ -31,6 +31,29 @@ class _SEBlock(nn.Module):
         super().__init__()
         C = in_channels
         self.globpool = nn.AdaptiveAvgPool2d((1,1))
+        self.conv1 = nn.Conv2d(C, C//r, stride=1, kernel_size = 1, bias = False)
+        self.conv2 = nn.Conv2d(C//r, C, stride=1, kernel_size = 1, bias = False)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        # x shape: [N, C, H, W]
+        f = self.globpool(x)
+        f = torch.flatten(f,1)
+        f = self.relu(self.conv1(f))
+        f = self.sigmoid(self.conv2(f))
+        f = f[:,:,None,None]
+        # f shape: [N, C, 1, 1]
+
+        scale = x * f
+        return scale
+
+#here we will replace fc with 1 x 1 Conv 
+class _SEBlock_Pointwise(nn.Module):
+    def __init__(self, in_channels, r=16):
+        super().__init__()
+        C = in_channels
+        self.globpool = nn.AdaptiveAvgPool2d((1,1))
         self.fc1 = nn.Linear(C, C//r, bias=False)
         self.fc2 = nn.Linear(C//r, C, bias=False)
         self.relu = nn.ReLU()
@@ -48,8 +71,6 @@ class _SEBlock(nn.Module):
         scale = x * f
         return scale
 
-
-
 class Bottleneck_Optimized(Bottleneck):
     """
     Wrapper for `Torch Vision` `ResNet` `Bottleneck`
@@ -65,6 +86,9 @@ class Bottleneck_Optimized(Bottleneck):
             self.conv2 = _DepthWiseSeparable2D(width, width, stride)   #overwrite conv2D to DepthWS
         if True:
             self.relu  = nn.GELU()    #overwrite relu to gelu
+
+        if True:
+            self.se_conv = _SEBlock_Pointwise(planes * self.expansion)
 
     def forward(self, x: Tensor) -> Tensor:
         # TODO Modify for optimization
