@@ -25,7 +25,31 @@ class _DepthWiseSeparable2D(nn.Module):
         out = self.PointWise(out)
 
         return out
+
+class _SEBlock(nn.Module):
+    def __init__(self, c, r=16):   #c is the size of the feature map
+          super().__init__()
+          self.globpool = nn.AdaptiveAvgPool2d((1,1))
+          self.fc1     =  nn.Linear(c, c // r)  #in->>c , out-->c/r
+          self.fc2     =  nn.Linear(c // r, c)  #in->>c/r , out-->c
+          self.relu    =  nn.ReLU()
+          self.sigmoid =  nn.Sigmoid()
     
+    def forward(self, x):
+
+        f = self.globpool(x)
+        f = torch.flatten(f, 1) # start dim(the first dim to flatten) = 1
+        f = self.relu(self.fc1(f))
+        f = self.sigmoid(self.fc2(f))
+
+        f = f[:,:,None,None]  #
+
+        return x * f
+
+
+          
+        
+
 
 #Here we will replace Relu module with Gelu in "FasterRCNN_Optimized" model..............
 def _Apply_GELU_(model):
@@ -43,8 +67,17 @@ class Bottleneck_Optimized(Bottleneck):
     """
     def __init__(self, inplanes: int, planes: int, stride: int = 1, downsample = None, groups = 1, base_width = 64, dilation = 1, norm_layer = None):
         super().__init__(inplanes, planes, stride, downsample, groups, base_width, dilation, norm_layer)
+
         # TODO Modify for optimization
-        
+        self.conv2 = _DepthWiseSeparable2D(base_width, base_width, stride)   #overwrite conv2D to DepthWS
+        self.relu  = nn.GELU()    #overwrite relu to gelu
+        self.se    = _SEBlock(planes)
+
+
+
+
+
+
     def forward(self, x: Tensor) -> Tensor:
         # TODO Modify for optimization
         identity = x
@@ -59,6 +92,8 @@ class Bottleneck_Optimized(Bottleneck):
 
         out = self.conv3(out)
         out = self.bn3(out)
+
+        out = self.se(out)    #Apply Squeeze and Excitation
 
         if self.downsample is not None:
             identity = self.downsample(x)
@@ -84,6 +119,8 @@ class ResNet50_Optimized(ResNet):
                         norm_layer = FrozenBatchNorm2d,
                         )
         # TODO Modify for optimization
+
+
         
     def forward(self, x: Tensor) -> Tensor:
         # TODO Modify for optimization
@@ -144,9 +181,9 @@ class FasterRCNN_Optimized(FasterRCNN):
                         # bbox_reg_weights,
                         )
         # Here we're loading the pre-trained weights for the whole model `FasterRCNN + ResNet50 + FPN`
-        self.load_state_dict(load("fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
+        #self.load_state_dict(load("fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
         #self.load_state_dict(load("/home/ai1/.cache/torch/hub/checkpoints/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
-        
+        """
         # TODO modify/fine-tune the backbone
         if True:
             # Updating backbone using depth-wise separable convolution instead of standard convolution
@@ -177,7 +214,7 @@ class FasterRCNN_Optimized(FasterRCNN):
         if True:
             # Updating backbone using GELU activation instead of Relu
             _Apply_GELU_(self)
-
+        """
         # The following snippets modifies the backbone architecture by different ways.
         
         # The following deletes an existing block
