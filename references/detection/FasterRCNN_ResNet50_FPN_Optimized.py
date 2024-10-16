@@ -71,6 +71,44 @@ class _SEBlock_Pointwise(nn.Module):
         scale = x * f
         return scale
 
+
+"""
+def mode_fuse(model):
+    #is_qat = False
+    #Fusion wont be done becuase we have only FrozenBN NOT BN ........................................................
+   # fuse_modules = torch.ao.quantization.fuse_modules_qat if is_qat else torch.ao.quantization.fuse_modules
+    for module_name, module in model.backbone.body.named_children():
+        #print("module_name",module_name)
+        #print("Module",module)
+        if "layer" in module_name:
+            for m in module:
+                print("m", m.conv1)
+                fuse_conv_bn(m.conv1, m.bn1)
+                #fuse_conv_bn(m, ['conv2', 'bn2'])
+                #fuse_conv_bn(m, ['conv3','bn3'])
+#...........................................................................................................................
+
+from torch.nn.utils import fuse_conv_bn_weights
+
+def fuse_conv_bn(conv, bn):
+    fused_conv = nn.Conv2d(
+        conv.in_channels,
+        conv.out_channels,
+        conv.kernel_size,
+        conv.stride,
+        conv.padding,
+        conv.dilation,
+        conv.groups,
+        bias=True
+    )
+
+    fused_conv.weight.data = fuse_conv_bn_weights(
+        conv.weight, conv.bias, bn.running_mean, bn.running_var, bn.eps, bn.weight, bn.bias
+    )
+
+    return fused_conv
+"""
+
 class Bottleneck_Optimized(Bottleneck):
     """
     Wrapper for `Torch Vision` `ResNet` `Bottleneck`
@@ -214,8 +252,12 @@ class FasterRCNN_Optimized(FasterRCNN):
                         # bbox_reg_weights,
                         )
         # Here we're loading the pre-trained weights for the whole model `FasterRCNN + ResNet50 + FPN`
-        #self.load_state_dict(load("fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
-        #self.load_state_dict(load("/home/ai1/.cache/torch/hub/checkpoints/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
+        #state_dict =self.load_state_dict(load("C:/Users/nhlp4620/FreeTrial/Pytorch-Vision/references/detection/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
+        state_dict =load("C:/Users/nhlp4620/FreeTrial/Pytorch-Vision/references/detection/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True)
+        self.load_state_dict(state_dict, strict=False)
+        # Load the modified state_dict back into the model
+        # Filter state_dict to match modified model keys
+        
        
         # The following snippets modifies the backbone architecture by different ways.
         
@@ -244,6 +286,28 @@ class FasterRCNN_Optimized(FasterRCNN):
         # backbone.body.conv3 = Conv2d(128, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
 
 model = FasterRCNN_Optimized()
+
+
+#For Applying Quantization aware Training we need some steps:
+"""
+1- Load the model
+2- Module Fusion: combine Conv2d with ReLU and BatchNorm2d ...
+
+     --> "qat_model = load_model(saved_model_dir + float_model_file)
+     --> qat_model.fuse_model(is_qat=True)"
+
+3- Set quantization config to define how activations and weights are quantized during training....
+
+     --> qat_model.qconfig = torch.ao.quantization.get_default_qat_qconfig('x86')
+
+4- Apply Quantization....
+     --> torch.ao.quantization.prepare_qat(qat_model, inplace=True)
+     --> print('Inverted Residual Block: After preparation for QAT, note fake-quantization modules \n',qat_model.features[1].conv)
+
+"""
+#mode_fuse(model)
+#print("Fused Model", model)
+
 model.eval()
 
 print(f"*"*80)
@@ -252,4 +316,4 @@ print(f"-"*80)
 print(model)
 print(f"*"*80)
 
-summary(model, input_size=(1, 3, 1333, 800), depth = 10)
+#summary(model, input_size=(1, 3, 1333, 800), depth = 10)
