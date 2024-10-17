@@ -218,7 +218,7 @@ class FasterRCNN_Optimized(FasterRCNN):
                         )
         # Here we're loading the pre-trained weights for the whole model `FasterRCNN + ResNet50 + FPN`
         #state_dict =self.load_state_dict(load("C:/Users/nhlp4620/FreeTrial/Pytorch-Vision/references/detection/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
-        state_dict =load("C:/Users/nhlp4620/FreeTrial/Pytorch-Vision/references/detection/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True)
+        state_dict =load("/home/ai1/DATA/PyTorch_Vision/references/detection/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True)
         self.load_state_dict(state_dict, strict=False)
         # Load the modified state_dict back into the model
         # Filter state_dict to match modified model keys
@@ -250,7 +250,7 @@ class FasterRCNN_Optimized(FasterRCNN):
         # backbone.body.conv2 = Conv2d(64, 128, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
         # backbone.body.conv3 = Conv2d(128, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
 
-
+    """
     def fuse_model(self):
         #is_qat = False
         # fuse_modules = torch.ao.quantization.fuse_modules_qat if is_qat else torch.ao.quantization.fuse_modules
@@ -265,7 +265,7 @@ class FasterRCNN_Optimized(FasterRCNN):
                     fused_conv = self.fuse_conv_bn(m.conv3, m.bn3)
                     m.conv3 = fused_conv
                     m.bn3 = nn.Identity()
-                    #fuse_conv_bn(m, ['conv2', 'bn2'])   # Conv2 is Depthwise Separable, Let's think how to Fuse
+                    #fuse_conv_bn(m, ['conv2', 'bn2'])   # Conv2 is Depthwise Separable, Let's think how to Fuse 
 
 
     def fuse_conv_bn(self,conv, bn):
@@ -287,7 +287,7 @@ class FasterRCNN_Optimized(FasterRCNN):
         fused_conv.bias.data = bias
 
         return fused_conv
-    
+    """
 
 
 
@@ -313,8 +313,8 @@ model = FasterRCNN_Optimized()
      --> print('Inverted Residual Block: After preparation for QAT, note fake-quantization modules \n',qat_model.features[1].conv)
 
 """
-model.fuse_model()
-print("Fused Model", model)
+#model.fuse_model()
+#print("Fused Model", model)
 
 model.eval()
 
