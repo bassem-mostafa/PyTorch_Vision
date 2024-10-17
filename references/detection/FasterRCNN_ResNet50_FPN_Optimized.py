@@ -1,15 +1,16 @@
 from torchinfo import summary # https://www.geeksforgeeks.org/how-to-print-the-model-summary-in-pytorch/
 from torch import nn, load, Tensor
 from torchvision.models.detection import FasterRCNN
-
 from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor
 from torchvision.ops.misc import FrozenBatchNorm2d
-
 import torch
-
 from collections import OrderedDict
-
 from torchvision.models.resnet import ResNet, Bottleneck
+from torch.nn.utils import fuse_conv_bn_weights
+
+
+
+
 
 def _rename_module(module, old_name, new_name):
     module.__dict__['_modules'] = OrderedDict([(new_name, v) if k == old_name else (k, v) for k, v in module.__dict__['_modules'].items()])
@@ -71,43 +72,6 @@ class _SEBlock_Pointwise(nn.Module):
         scale = x * f
         return scale
 
-
-"""
-def mode_fuse(model):
-    #is_qat = False
-    #Fusion wont be done becuase we have only FrozenBN NOT BN ........................................................
-   # fuse_modules = torch.ao.quantization.fuse_modules_qat if is_qat else torch.ao.quantization.fuse_modules
-    for module_name, module in model.backbone.body.named_children():
-        #print("module_name",module_name)
-        #print("Module",module)
-        if "layer" in module_name:
-            for m in module:
-                print("m", m.conv1)
-                fuse_conv_bn(m.conv1, m.bn1)
-                #fuse_conv_bn(m, ['conv2', 'bn2'])
-                #fuse_conv_bn(m, ['conv3','bn3'])
-#...........................................................................................................................
-
-from torch.nn.utils import fuse_conv_bn_weights
-
-def fuse_conv_bn(conv, bn):
-    fused_conv = nn.Conv2d(
-        conv.in_channels,
-        conv.out_channels,
-        conv.kernel_size,
-        conv.stride,
-        conv.padding,
-        conv.dilation,
-        conv.groups,
-        bias=True
-    )
-
-    fused_conv.weight.data = fuse_conv_bn_weights(
-        conv.weight, conv.bias, bn.running_mean, bn.running_var, bn.eps, bn.weight, bn.bias
-    )
-
-    return fused_conv
-"""
 
 class Bottleneck_Optimized(Bottleneck):
     """
@@ -214,6 +178,7 @@ class ResNet50_Optimized(ResNet):
 
 class FasterRCNN_Optimized(FasterRCNN):
     def __init__(self):
+        #self.mode_fuse = None
         backbone = _resnet_fpn_extractor(
                                         backbone = ResNet50_Optimized(),
                                         trainable_layers = 3, # trainable_layers (int): number of trainable (not frozen) layers starting from final block.
@@ -285,6 +250,49 @@ class FasterRCNN_Optimized(FasterRCNN):
         # backbone.body.conv2 = Conv2d(64, 128, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
         # backbone.body.conv3 = Conv2d(128, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
 
+
+    def fuse_model(self):
+        #is_qat = False
+        # fuse_modules = torch.ao.quantization.fuse_modules_qat if is_qat else torch.ao.quantization.fuse_modules
+        for module_name, module in self.backbone.body.named_children():
+            #print("module_name",module_name)
+            #print("Module",module)
+            if "layer" in module_name:
+                for _, m in enumerate(module):
+                    fused_conv = self.fuse_conv_bn(m.conv1, m.bn1)
+                    m.conv1 = fused_conv
+                    m.bn1 = nn.Identity()
+                    fused_conv = self.fuse_conv_bn(m.conv3, m.bn3)
+                    m.conv3 = fused_conv
+                    m.bn3 = nn.Identity()
+                    #fuse_conv_bn(m, ['conv2', 'bn2'])   # Conv2 is Depthwise Separable, Let's think how to Fuse
+
+
+    def fuse_conv_bn(self,conv, bn):
+        fused_conv = nn.Conv2d(
+            conv.in_channels,
+            conv.out_channels,
+            conv.kernel_size,
+            conv.stride,
+            conv.padding,
+            conv.dilation,
+            conv.groups,
+            bias=True
+        )
+
+        weights, bias = fuse_conv_bn_weights(
+            conv.weight, conv.bias, bn.running_mean, bn.running_var, bn.eps, bn.weight, bn.bias
+        )
+        fused_conv.weight.data = weights
+        fused_conv.bias.data = bias
+
+        return fused_conv
+    
+
+
+
+
+
 model = FasterRCNN_Optimized()
 
 
@@ -305,8 +313,8 @@ model = FasterRCNN_Optimized()
      --> print('Inverted Residual Block: After preparation for QAT, note fake-quantization modules \n',qat_model.features[1].conv)
 
 """
-#mode_fuse(model)
-#print("Fused Model", model)
+model.fuse_model()
+print("Fused Model", model)
 
 model.eval()
 
