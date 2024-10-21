@@ -27,7 +27,7 @@ class _DepthWiseSeparable2D(nn.Module):
 
         return out
 
-class _SEBlock(nn.Module):
+class _SEBlock_Pointwise(nn.Module):
     def __init__(self, in_channels, r=16):
         super().__init__()
         C = in_channels
@@ -50,7 +50,7 @@ class _SEBlock(nn.Module):
         return scale
 
 #here we will replace fc with 1 x 1 Conv 
-class _SEBlock_Pointwise(nn.Module):
+class _SEBlock(nn.Module):
     def __init__(self, in_channels, r=16):
         super().__init__()
         C = in_channels
@@ -72,7 +72,6 @@ class _SEBlock_Pointwise(nn.Module):
         scale = x * f
         return scale
 
-
 class Bottleneck_Optimized(Bottleneck):
     """
     Wrapper for `Torch Vision` `ResNet` `Bottleneck`
@@ -82,7 +81,7 @@ class Bottleneck_Optimized(Bottleneck):
         # TODO Modify for optimization
         self.expansion = 4
         width = int(planes * (base_width / 64.0)) * groups
-        if False:
+        if True:
             self.se    = _SEBlock(planes * self.expansion )
         if False:
             self.se = _SEBlock_Pointwise(planes * self.expansion)
@@ -217,8 +216,8 @@ class FasterRCNN_Optimized(FasterRCNN):
                         # bbox_reg_weights,
                         )
         # Here we're loading the pre-trained weights for the whole model `FasterRCNN + ResNet50 + FPN`
-        #state_dict =self.load_state_dict(load("C:/Users/nhlp4620/FreeTrial/Pytorch-Vision/references/detection/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True))
-        state_dict =load("/home/ai1/DATA/PyTorch_Vision/references/detection/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True)
+        state_dict =load("C:/Users/nhlp4620/FreeTrial/Pytorch-Vision/references/detection/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True)
+        #state_dict =load("/home/ai1/DATA/PyTorch_Vision/references/detection/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth", weights_only=True)
         self.load_state_dict(state_dict, strict=False)
         # Load the modified state_dict back into the model
         # Filter state_dict to match modified model keys
@@ -250,7 +249,7 @@ class FasterRCNN_Optimized(FasterRCNN):
         # backbone.body.conv2 = Conv2d(64, 128, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
         # backbone.body.conv3 = Conv2d(128, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
 
-    """
+    
     def fuse_model(self):
         #is_qat = False
         # fuse_modules = torch.ao.quantization.fuse_modules_qat if is_qat else torch.ao.quantization.fuse_modules
@@ -287,7 +286,7 @@ class FasterRCNN_Optimized(FasterRCNN):
         fused_conv.bias.data = bias
 
         return fused_conv
-    """
+    
 
 
 
@@ -313,7 +312,11 @@ model = FasterRCNN_Optimized()
      --> print('Inverted Residual Block: After preparation for QAT, note fake-quantization modules \n',qat_model.features[1].conv)
 
 """
-#model.fuse_model()
+#Test Model Quntization
+
+model.fuse_model()
+model.qconfig = torch.ao.quantization.get_default_qat_qconfig('x86')
+torch.ao.quantization.prepare_qat(model, inplace=True)
 #print("Fused Model", model)
 
 model.eval()
@@ -324,4 +327,4 @@ print(f"-"*80)
 print(model)
 print(f"*"*80)
 
-#summary(model, input_size=(1, 3, 1333, 800), depth = 10)
+summary(model, input_size=(1, 3, 1333, 800), depth = 10)
